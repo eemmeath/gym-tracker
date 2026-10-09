@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gym Tracker Pro + Visual Guide</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --accent: #2f81f7;
+      --green: #238636;
+      --red: #da3633;
+      --text: #c9d1d9;
+      --text-white: #f0f6fc;
+      --subtext: #8b949e;
+      --yt-red: #ff0000;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 90px; }
+
+    header {
+      background: var(--card);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .header-user-row { display: flex; gap: 8px; align-items: center; }
+
+    .container { max-width: 600px; margin: 0 auto; padding: 14px; }
+
+    .nav-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+    .tab-btn {
+      flex: 1;
+      padding: 9px 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--subtext);
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 0.85rem;
+    }
+    .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .splits-bar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; }
+    .split-pill {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--subtext);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .split-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--text-white);
+      font-size: 0.95rem;
+    }
+
+    .set-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .set-table th { color: var(--subtext); padding: 6px 4px; text-align: center; font-size: 0.75rem; }
+    .set-table td { padding: 6px 4px; text-align: center; }
+    
+    input, select {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 4px;
+      font-size: 0.85rem;
+      text-align: center;
+      width: 100%;
+    }
+    input:focus, select:focus { border-color: var(--accent); outline: none; }
+
+    .check-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .check-btn.checked { background: var(--green); border-color: var(--green); color: #fff; }
+
+    .action-btn {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px dashed var(--accent);
+      color: var(--accent);
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Guide Badge Button */
+    .guide-btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: #58a6ff;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .guide-btn:hover { background: #30363d; }
+
+    /* Modal Backdrop & Dialog */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 500;
+      justify-content: center;
+      align-items: center;
+      padding: 14px;
+    }
+    .modal-content {
+      background: var(--card);
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      overflow-y: auto;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio */
+      height: 0;
+      margin-top: 10px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .preview-img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+    }
+
+    #timer-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #161b22;
+      border-top: 2px solid var(--accent);
+      padding: 12px 20px;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-top">
+      <div>
+        <h1 style="font-size: 1.1rem; color: var(--text-white);">Gym Tracker Pro</h1>
+        <div style="font-size: 0.75rem; color: var(--subtext);" id="session-summary">Volume: 0 kg | Selesai: 0 set</div>
+      </div>
+      <button onclick="finishWorkout()" style="background: var(--accent); border:none; color:#fff; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer;">Selesai Sesi</button>
+    </div>
+    <div class="header-user-row">
+      <span style="font-size: 0.8rem; color: var(--subtext); white-space: nowrap;">Profil:</span>
+      <select id="user-select" onchange="switchUser(this.value)" style="flex: 1; text-align: left; padding: 6px 8px;"></select>
+      <button onclick="addUserPrompt()" style="background: #21262d; border: 1px solid var(--border); color: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer;">+ User</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('workout')">Latihan</button>
+      <button class="tab-btn" onclick="switchTab('db')">Database Latihan</button>
+      <button class="tab-btn" onclick="switchTab('history')">Riwayat</button>
+    </div>
+
+    <!-- TAB WORKOUT -->
+    <div id="tab-workout">
+      <div class="splits-bar" id="splits-container"></div>
+      <div id="exercise-list"></div>
+      <button class="action-btn" onclick="openExercisePicker()">+ Tambah Gerakan Baru</button>
+    </div>
+
+    <!-- TAB DATABASE LATIHAN -->
+    <div id="tab-db" style="display: none;">
+      <div class="card">
+        <div class="card-title">
+          <span>Import File Database</span>
+          <span style="font-size: 0.75rem; color: var(--subtext);">JSON / CSV</span>
+        </div>
+        <input type="file" accept=".json,.txt,.csv" onchange="importExerciseFile(event)" style="padding: 10px; margin-bottom: 8px; background: #0d1117;" />
+        <button class="tab-btn" onclick="downloadSampleJSON()" style="width: 100%; border: 1px solid var(--border);">Unduh Contoh Format JSON</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Katalog Gerakan (<span id="total-db-count">0</span>)</div>
+        <input type="text" id="db-search-input" placeholder="Cari nama latihan / otot..." oninput="renderDBTabList()" style="margin-bottom: 10px; text-align: left; padding: 8px 10px;" />
+        <div id="db-catalog-list" style="max-height: 380px; overflow-y: auto;"></div>
+      </div>
+    </div>
+
+    <!-- TAB HISTORY -->
+    <div id="tab-history" style="display: none;">
+      <div class="card">
+        <div class="card-title">Riwayat Sesi: <span id="history-user-label" style="color: var(--accent);"></span></div>
+        <div id="history-list" style="font-size: 0.85rem; color: var(--subtext);">Belum ada riwayat sesi.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL VISUAL PREVIEW / PANDUAN GERAKAN -->
+  <div class="modal-backdrop" id="guide-modal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <strong id="guide-title" style="color: var(--text-white); font-size: 1.1rem;">Panduan Gerakan</strong>
+        <button onclick="closeGuideModal()" style="background: none; border: none; color: var(--subtext); font-size: 1.3rem; cursor: pointer;">✕</button>
+      </div>
+
+      <div id="guide-muscle-info" style="font-size: 0.8rem; color: var(--subtext); margin-bottom: 8px;"></div>
+      <div id="guide-visual-container"></div>
+
+      <div style="margin-top: 14px; display: flex; gap: 8px;">
+        <a id="guide-yt-link" target="_blank" style="flex: 1; text-align: center; background: #21262d; border: 1px solid var(--border); color: #fff; text-decoration: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+          Buka di Aplikasi YouTube ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EXERCISE SELECTOR -->
+  <div class="modal-backdrop" id="picker-modal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <strong style="color: var(--text-white);">Pilih Gerakan ke Sesi</strong>
+        <button onclick="closeExercisePicker()" style="background: none; border: none; color: var(--subtext); font-size: 1.2rem; cursor: pointer;">✕</button>
+      </div>
+      <input type="text" id="picker-search" placeholder="Cari gerakan..." oninput="renderPickerList()" style="text-align: left; padding: 8px; margin-bottom: 10px;" />
+      <div id="picker-list" style="overflow-y: auto; flex: 1;"></div>
+    </div>
+  </div>
+
+  <!-- Rest Timer Widget -->
+  <div id="timer-bar">
+    <div>
+      <span style="font-size: 0.8rem; color: var(--subtext);">Istirahat: </span>
+      <strong id="timer-display" style="font-size: 1.1rem; color: var(--text-white);">01:30</strong>
+    </div>
+    <button onclick="stopTimer()" style="background: var(--red); border:none; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">Lewati</button>
+  </div>
+
+  <script>
+    // Database Latihan dengan Dukungan Gambar / Embed YouTube
+    const defaultDatabase = [
+      {
+        name: "Barbell Bench Press",
+        category: "Push",
+        muscle: "Dada Tengah & Triceps",
+        image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&auto=format&fit=crop&q=60",
+        youtubeId: "rT7DgCr-3pg" // YouTube video ID
+      },
+      {
+        name: "Push-up",
+        category: "Push",
+        muscle: "Dada, Bahu Depan & Core",
+        image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=600&auto=format&fit=crop&q=60",
+        youtubeId: "IODxDxX7oi4"
+      },
+      {
+        name: "Overhead Shoulder Press",
+        category: "Push",
+        muscle: "Bahu Depan & Lateral",
+        image: "https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=600&auto=format&fit=crop&q=60",
+        youtubeId: "2yjwXTZQDDI"
+      },
+      {
+        name: "Barbell Squat",
+        category: "Legs",
+        muscle: "Quadriceps & Glutes",
+        image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&auto=format&fit=crop&q=60",
+        youtubeId: "bEv6CCg2BC8"
+      },
+      {
+        name: "Romanian Deadlift",
+        category: "Legs",
+        muscle: "Hamstrings & Glutes",
+        image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=60",
+        youtubeId: "jey_CzKn3mw"
+      },
+      {
+        name: "Lat Pulldown",
+        category: "Pull",
+        muscle: "Lats & Punggung Atas",
+        image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=600&auto=format&fit=crop&q=60",
+        youtubeId: "CAwf7n6Luuc"
+      }
+    ];
+
+    let exerciseDB = JSON.parse(localStorage.getItem("gym_exercise_db")) || defaultDatabase;
+    const defaultSplits = ["Push", "Pull", "Legs", "Upper Body", "Lower Body"];
+    let users = JSON.parse(localStorage.getItem("gym_users")) || ["Kevin", "Partner"];
+    let currentUser = localStorage.getItem("gym_current_user") || users[0];
+    let currentSplit = "Push";
+    let userWorkoutData = {};
+    let timerInterval = null;
+    let secondsLeft = 90;
+
+    function init() {
+      saveDB();
+      loadUserRoutine();
+      populateUserDropdown();
+      renderSplitsBar();
+      renderCurrentWorkout();
+    }
+
+    function saveDB() {
+      localStorage.setItem("gym_exercise_db", JSON.stringify(exerciseDB));
+      document.getElementById("total-db-count").innerText = exerciseDB.length;
+    }
+
+    function populateUserDropdown() {
+      const select = document.getElementById("user-select");
+      select.innerHTML = users.map(u => `<option value="${u}" ${u === currentUser ? 'selected' : ''}>${u}</option>`).join("");
+    }
+
+    function switchUser(u) {
+      currentUser = u;
+      localStorage.setItem("gym_current_user", currentUser);
+      loadUserRoutine();
+      renderCurrentWorkout();
+      loadHistory();
+    }
+
+    function addUserPrompt() {
+      const name = prompt("Nama pengguna baru:");
+      if (name && !users.includes(name.trim())) {
+        users.push(name.trim());
+        localStorage.setItem("gym_users", JSON.stringify(users));
+        switchUser(name.trim());
+        populateUserDropdown();
+      }
+    }
+
+    function loadUserRoutine() {
+      const saved = localStorage.getItem(`gym_routine_${currentUser}`);
+      if (saved) {
+        userWorkoutData = JSON.parse(saved);
+      } else {
+        userWorkoutData = {
+          "Push": [{ name: "Push-up", sets: [{ type: "N", prev: "-", weight: 0, reps: 15, done: false }] }],
+          "Pull": [{ name: "Lat Pulldown", sets: [{ type: "N", prev: "-", weight: 40, reps: 10, done: false }] }],
+          "Legs": [{ name: "Barbell Squat", sets: [{ type: "N", prev: "-", weight: 50, reps: 8, done: false }] }],
+          "Upper Body": [],
+          "Lower Body": []
+        };
+      }
+    }
+
+    function saveUserRoutine() {
+      localStorage.setItem(`gym_routine_${currentUser}`, JSON.stringify(userWorkoutData));
+    }
+
+    function renderSplitsBar() {
+      const bar = document.getElementById("splits-container");
+      bar.innerHTML = defaultSplits.map(s => `
+        <button class="split-pill ${s === currentSplit ? 'active' : ''}" onclick="changeSplit('${s}')">${s}</button>
+      `).join("");
+    }
+
+    function changeSplit(s) {
+      currentSplit = s;
+      renderSplitsBar();
+      renderCurrentWorkout();
+    }
+
+    function renderCurrentWorkout() {
+      const container = document.getElementById("exercise-list");
+      container.innerHTML = "";
+      const exercises = userWorkoutData[currentSplit] || [];
+
+      exercises.forEach((ex, exIndex) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        let setsRows = ex.sets.map((s, sIndex) => `
+          <tr>
+            <td style="width: 12%;">${sIndex + 1}</td>
+            <td style="width: 20%;">
+              <select onchange="updateSet(${exIndex}, ${sIndex}, 'type', this.value)">
+                <option value="N" ${s.type === 'N' ? 'selected' : ''}>Norm</option>
+                <option value="W" ${s.type === 'W' ? 'selected' : ''}>Warm</option>
+                <option value="D" ${s.type === 'D' ? 'selected' : ''}>Drop</option>
+                <option value="F" ${s.type === 'F' ? 'selected' : ''}>Fail</option>
+              </select>
+            </td>
+            <td style="color: var(--subtext); width: 20%;">${s.prev}</td>
+            <td style="width: 18%;">
+              <input type="number" value="${s.weight}" onchange="updateSet(${exIndex}, ${sIndex}, 'weight', this.value)">
+            </td>
+            <td style="width: 18%;">
+              <input type="number" value="${s.reps}" onchange="updateSet(${exIndex}, ${sIndex}, 'reps', this.value)">
+            </td>
+            <td style="width: 12%;">
+              <button class="check-btn ${s.done ? 'checked' : ''}" onclick="toggleSet(${exIndex}, ${sIndex})">✓</button>
+            </td>
+          </tr>
+        `).join("");
+
+        card.innerHTML = `
+          <div class="card-title">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <strong>${ex.name}</strong>
+              <button class="guide-btn" onclick="openExerciseGuide('${ex.name}')">👁 Panduan</button>
+            </div>
+            <button onclick="removeExercise(${exIndex})" style="background:none; border:none; color:var(--red); cursor:pointer;">Hapus</button>
+          </div>
+          <table class="set-table">
+            <thead>
+              <tr><th>SET</th><th>TIPE</th><th>LALU</th><th>KG</th><th>REPS</th><th>OK</th></tr>
+            </thead>
+            <tbody>${setsRows}</tbody>
+          </table>
+          <button class="action-btn" onclick="addSet(${exIndex})">+ Tambah Set</button>
+        `;
+        container.appendChild(card);
+      });
+
+      calculateTotals();
+    }
+
+    // Tampilkan Modal Visual Panduan Gerakan
+    function openExerciseGuide(exerciseName) {
+      const match = exerciseDB.find(e => e.name.toLowerCase() === exerciseName.toLowerCase());
+      const modal = document.getElementById("guide-modal");
+      const title = document.getElementById("guide-title");
+      const muscleInfo = document.getElementById("guide-muscle-info");
+      const visualContainer = document.getElementById("guide-visual-container");
+      const ytLink = document.getElementById("guide-yt-link");
+
+      title.innerText = exerciseName;
+      muscleInfo.innerText = match ? `Target: ${match.muscle || '-'} | Kategori: ${match.category || '-'}` : "Panduan visual & teknik eksekusi";
+
+      visualContainer.innerHTML = "";
+
+      // 1. Jika ada YouTube ID bawaan, embed video
+      if (match && match.youtubeId) {
+        visualContainer.innerHTML = `
+          <div class="video-container">
+            <iframe src="https://www.youtube-nocookie.com/embed/${match.youtubeId}" allowfullscreen></iframe>
+          </div>
+        `;
+      } 
+      // 2. Jika ada link Gambar/GIF
+      else if (match && match.image) {
+        visualContainer.innerHTML = `<img src="${match.image}" class="preview-img" alt="${exerciseName}" />`;
+      } 
+      // 3. Fallback jika belum ada media
+      else {
+        visualContainer.innerHTML = `
+          <div style="padding: 30px; text-align: center; background: #0d1117; border-radius: 8px; margin-top: 10px; color: var(--subtext);">
+            Belum ada foto/video bawaan untuk gerakan ini. Silakan klik tombol di bawah untuk melihat langsung di YouTube.
+          </div>
+        `;
+      }
+
+      // Link pencarian instan YouTube
+      const searchQuery = encodeURIComponent(`how to do ${exerciseName} form workout`);
+      ytLink.href = `https://www.youtube.com/results?search_query=${searchQuery}`;
+
+      modal.style.display = "flex";
+    }
+
+    function closeGuideModal() {
+      const modal = document.getElementById("guide-modal");
+      modal.style.display = "none";
+      document.getElementById("guide-visual-container").innerHTML = ""; // Stop video playback
+    }
+
+    function updateSet(exIdx, setIdx, field, val) {
+      userWorkoutData[currentSplit][exIdx].sets[setIdx][field] = field === 'type' ? val : Number(val);
+      saveUserRoutine();
+      calculateTotals();
+    }
+
+    function toggleSet(exIdx, setIdx) {
+      const set = userWorkoutData[currentSplit][exIdx].sets[setIdx];
+      set.done = !set.done;
+      if (set.done) startTimer(90);
+      saveUserRoutine();
+      renderCurrentWorkout();
+    }
+
+    function addSet(exIdx) {
+      const sets = userWorkoutData[currentSplit][exIdx].sets;
+      const last = sets[sets.length - 1] || { weight: 0, reps: 10 };
+      sets.push({ type: "N", prev: `${last.weight}kg x ${last.reps}`, weight: last.weight, reps: last.reps, done: false });
+      saveUserRoutine();
+      renderCurrentWorkout();
+    }
+
+    function removeExercise(idx) {
+      if (confirm("Hapus latihan ini?")) {
+        userWorkoutData[currentSplit].splice(idx, 1);
+        saveUserRoutine();
+        renderCurrentWorkout();
+      }
+    }
+
+    // Modal Picker
+    function openExercisePicker() {
+      document.getElementById("picker-modal").style.display = "flex";
+      renderPickerList();
+    }
+
+    function closeExercisePicker() {
+      document.getElementById("picker-modal").style.display = "none";
+    }
+
+    function renderPickerList() {
+      const q = document.getElementById("picker-search").value.toLowerCase();
+      const list = document.getElementById("picker-list");
+      const filtered = exerciseDB.filter(e => e.name.toLowerCase().includes(q) || (e.muscle && e.muscle.toLowerCase().includes(q)));
+
+      list.innerHTML = filtered.map(e => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border); cursor:pointer;" onclick="selectExerciseFromDB('${e.name}')">
+          <div>
+            <div style="font-weight:600; color:var(--text-white);">${e.name}</div>
+            <div style="font-size:0.75rem; color:var(--subtext);">${e.muscle || ''} • ${e.category || ''}</div>
+          </div>
+          <button style="background:var(--accent); border:none; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem;">+ Pilih</button>
+        </div>
+      `).join("");
+    }
+
+    function selectExerciseFromDB(name) {
+      if (!userWorkoutData[currentSplit]) userWorkoutData[currentSplit] = [];
+      userWorkoutData[currentSplit].push({
+        name: name,
+        sets: [{ type: "N", prev: "-", weight: 0, reps: 10, done: false }]
+      });
+      saveUserRoutine();
+      closeExercisePicker();
+      renderCurrentWorkout();
+    }
+
+    // DB Tab Management & File Import
+    function renderDBTabList() {
+      const q = document.getElementById("db-search-input").value.toLowerCase();
+      const list = document.getElementById("db-catalog-list");
+      const filtered = exerciseDB.filter(e => e.name.toLowerCase().includes(q) || (e.muscle && e.muscle.toLowerCase().includes(q)));
+
+      list.innerHTML = filtered.map((e, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border);">
+          <div>
+            <strong style="color:var(--text-white); font-size:0.9rem;">${e.name}</strong>
+            <div style="font-size:0.75rem; color:var(--subtext);">${e.muscle || '-'} | Kategori: ${e.category || '-'}</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button onclick="openExerciseGuide('${e.name}')" style="background:#21262d; border:1px solid var(--border); color:#58a6ff; font-size:0.75rem; padding:4px 6px; border-radius:4px; cursor:pointer;">Preview</button>
+            <button onclick="deleteDBItem(${idx})" style="background:none; border:none; color:var(--red); font-size:0.75rem; cursor:pointer;">Hapus</button>
+          </div>
+        </div>
+      `).join("");
+      document.getElementById("total-db-count").innerText = exerciseDB.length;
+    }
+
+    function deleteDBItem(idx) {
+      if (confirm("Hapus dari database?")) {
+        exerciseDB.splice(idx, 1);
+        saveDB();
+        renderDBTabList();
+      }
+    }
+
+    function importExerciseFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const content = evt.target.result;
+          let added = 0;
+          if (file.name.endsWith(".json")) {
+            const parsed = JSON.parse(content);
+            parsed.forEach(i => {
+              if (i.name) {
+                exerciseDB.push({
+                  name: i.name,
+                  muscle: i.muscle || "Umum",
+                  category: i.category || "General",
+                  image: i.image || "",
+                  youtubeId: i.youtubeId || ""
+                });
+                added++;
+              }
+            });
+          }
+          saveDB();
+          renderDBTabList();
+          alert(`Sukses menambahkan ${added} gerakan ke database!`);
+        } catch(err) {
+          alert("Gagal membaca file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadSampleJSON() {
+      const sample = [
+        {
+          "name": "Dumbbell Incline Bench Press",
+          "muscle": "Dada Atas",
+          "category": "Push",
+          "image": "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600",
+          "youtubeId": "0G2_XX7nuAG"
+        }
+      ];
+      const blob = new Blob([JSON.stringify(sample, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "contoh_database_visual.json";
+      a.click();
+    }
+
+    // Timer & Session
+    function startTimer(duration) {
+      clearInterval(timerInterval);
+      secondsLeft = duration;
+      const bar = document.getElementById("timer-bar");
+      const display = document.getElementById("timer-display");
+      bar.style.display = "flex";
+
+      timerInterval = setInterval(() => {
+        secondsLeft--;
+        const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+        const s = (secondsLeft % 60).toString().padStart(2, '0');
+        display.innerText = `${m}:${s}`;
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          bar.style.display = "none";
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      document.getElementById("timer-bar").style.display = "none";
+    }
+
+    function calculateTotals() {
+      let totalVolume = 0;
+      let completedSets = 0;
+      const list = userWorkoutData[currentSplit] || [];
+
+      list.forEach(ex => {
+        ex.sets.forEach(s => {
+          if (s.done) {
+            completedSets++;
+            totalVolume += (s.weight * s.reps);
+          }
+        });
+      });
+
+      document.getElementById("session-summary").innerText = 
+        `Volume: ${totalVolume} kg | Selesai: ${completedSets} set`;
+    }
+
+    function finishWorkout() {
+      const list = userWorkoutData[currentSplit] || [];
+      let totalVol = 0;
+      let count = 0;
+      list.forEach(ex => ex.sets.forEach(s => {
+        if (s.done) { count++; totalVol += (s.weight * s.reps); }
+      }));
+
+      if (count === 0) {
+        alert("Belum ada set yang dicentang hari ini.");
+        return;
+      }
+
+      const dateStr = new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const record = `${dateStr} [${currentSplit}] — ${count} Set | Volume: ${totalVol} kg`;
+      
+      let savedHist = JSON.parse(localStorage.getItem(`gym_hist_${currentUser}`) || "[]");
+      savedHist.unshift(record);
+      localStorage.setItem(`gym_hist_${currentUser}`, JSON.stringify(savedHist));
+
+      list.forEach(ex => ex.sets.forEach(s => s.done = false));
+      saveUserRoutine();
+      renderCurrentWorkout();
+      loadHistory();
+      alert(`Sesi [${currentSplit}] selesai dan tersimpan ke riwayat!`);
+    }
+
+    function loadHistory() {
+      document.getElementById("history-user-label").innerText = currentUser;
+      const saved = JSON.parse(localStorage.getItem(`gym_hist_${currentUser}`) || "[]");
+      const list = document.getElementById("history-list");
+      list.innerHTML = saved.length === 0 ? "Belum ada riwayat sesi." : saved.map(i => `<div style="padding:6px 0; border-bottom:1px solid var(--border);">${i}</div>`).join("");
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("tab-workout").style.display = tab === 'workout' ? 'block' : 'none';
+      document.getElementById("tab-db").style.display = tab === 'db' ? 'block' : 'none';
+      document.getElementById("tab-history").style.display = tab === 'history' ? 'block' : 'none';
+      event.target.classList.add("active");
+      if (tab === 'db') renderDBTabList();
+      if (tab === 'history') loadHistory();
+    }
+
+    init();
+  </script>
+</body>
+</html>
