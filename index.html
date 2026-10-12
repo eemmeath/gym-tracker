@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Gym Workout Tracker Pro</title>
+  <!-- Tailwind CSS CDN for fluid utility styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #131926;
+      --card-border: #1f293d;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --purple: #7c3aed;
+      --green: #10b981;
+      --red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, select, textarea {
+      user-select: auto;
+    }
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Pulse badge for live timer */
+    @keyframes subtlePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+    .pulse-ring {
+      animation: subtlePulse 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased pb-24">
+
+  <!-- ==================== AUTH VIEW (LOGIN / REGISTER) ==================== -->
+  <div id="auth-screen" class="fixed inset-0 z-50 bg-[#090d16] flex flex-col justify-center items-center p-4">
+    <div class="w-full max-w-md bg-[#131926] border border-[#1f293d] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      <!-- Glow background accent -->
+      <div class="absolute -top-20 -right-20 w-44 h-44 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-20 -left-20 w-44 h-44 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- App Header & Logo -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 shadow-lg shadow-blue-500/30 mb-3">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-black text-white tracking-tight">GYM TRACKER PRO</h1>
+        <p class="text-xs text-slate-400 mt-1">Multi-User & Role-Based Training System</p>
+      </div>
+
+      <!-- Login Tab Toggle -->
+      <div class="flex bg-[#090d16] p-1 rounded-xl mb-5 border border-slate-800">
+        <button id="tab-toggle-login" onclick="setAuthMode('login')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-blue-600 text-white shadow">Masuk</button>
+        <button id="tab-toggle-reg" onclick="setAuthMode('register')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white">Daftar Akun</button>
+      </div>
+
+      <!-- Form Inputs -->
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Username</label>
+          <input type="text" id="auth-username" required placeholder="Contoh: coach / kevin" class="w-full bg-[#090d16] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-[#090d16] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+        </div>
+
+        <div id="auth-role-select-box" class="hidden">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Peran Akun Baru</label>
+          <select id="auth-role" class="w-full bg-[#090d16] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="user">Member / User Biasa</option>
+            <option value="admin">Super Admin (Coach)</option>
+          </select>
+        </div>
+
+        <!-- Alert Notification Message -->
+        <div id="auth-alert" class="hidden text-xs py-2 px-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400"></div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-500/20 active:scale-[0.98] transition">
+          Masuk ke Aplikasi
+        </button>
+      </form>
+
+      <!-- Quick Demo Login Buttons -->
+      <div class="mt-6 pt-5 border-t border-slate-800/80">
+        <p class="text-[11px] text-center text-slate-400 font-medium mb-2.5">Akses Uji Coba Cepat (1-Tap Demo):</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="quickLogin('admin')" class="py-2 px-3 bg-purple-950/40 hover:bg-purple-900/50 border border-purple-800/50 rounded-xl text-[11px] font-bold text-purple-300 flex items-center justify-center gap-1.5 transition">
+            <span>👑 Super Admin</span>
+          </button>
+          <button type="button" onclick="quickLogin('user')" class="py-2 px-3 bg-blue-950/40 hover:bg-blue-900/50 border border-blue-800/50 rounded-xl text-[11px] font-bold text-blue-300 flex items-center justify-center gap-1.5 transition">
+            <span>👤 Member (Kevin)</span>
+          </button>
+        </div>
+        <p class="text-[10px] text-center text-slate-500 mt-3">Demo pass: <code class="text-slate-400">admin123</code> / <code class="text-slate-400">user123</code></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION HEADER ==================== -->
+  <header class="bg-[#131926] border-b border-[#1f293d] sticky top-0 z-40 backdrop-blur-md bg-[#131926]/90">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-md shadow-blue-600/20 text-white font-bold text-sm">
+          GT
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="header-username" class="font-bold text-white text-sm">Pengguna</span>
+            <span id="header-role-badge" class="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">MEMBER</span>
+          </div>
+          <p id="session-summary" class="text-[11px] text-slate-400 font-medium">Vol: 0 kg • 0 set selesai</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="finishWorkout()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/30 transition flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+          <span>Selesai</span>
+        </button>
+        <button onclick="logout()" title="Keluar Akun" class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="max-w-2xl mx-auto w-full px-4 pt-3 flex-1 flex flex-col">
+    <!-- Top Navigation Tabs (Role-Filtered) -->
+    <nav class="flex bg-[#131926] p-1 rounded-2xl border border-[#1f293d] mb-3 overflow-x-auto scrollbar-none gap-1">
+      <button id="nav-btn-workout" onclick="switchNavTab('workout')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs transition bg-blue-600 text-white shadow-sm flex items-center justify-center gap-1 whitespace-nowrap">
+        <span>🏋️ Latihan</span>
+      </button>
+      <!-- Admin Exclusive: Panel Coach -->
+      <button id="nav-btn-coach" onclick="switchNavTab('coach')" class="admin-only hidden flex-1 py-2 px-3 rounded-xl font-bold text-xs transition text-slate-400 hover:text-white flex items-center justify-center gap-1 whitespace-nowrap">
+        <span>👑 Panel Coach</span>
+      </button>
+      <!-- Admin Exclusive: Database Latihan -->
+      <button id="nav-btn-db" onclick="switchNavTab('db')" class="admin-only hidden flex-1 py-2 px-3 rounded-xl font-bold text-xs transition text-slate-400 hover:text-white flex items-center justify-center gap-1 whitespace-nowrap">
+        <span>📚 Database</span>
+      </button>
+      <!-- Calculator / Tools for all users -->
+      <button id="nav-btn-tools" onclick="switchNavTab('tools')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs transition text-slate-400 hover:text-white flex items-center justify-center gap-1 whitespace-nowrap">
+        <span>🧮 Kalkulator</span>
+      </button>
+      <!-- History for all users -->
+      <button id="nav-btn-history" onclick="switchNavTab('history')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs transition text-slate-400 hover:text-white flex items-center justify-center gap-1 whitespace-nowrap">
+        <span>📜 Riwayat</span>
+      </button>
+    </nav>
+
+    <!-- ==================== TAB 1: WORKOUT TRACKER ==================== -->
+    <section id="section-workout" class="flex-1">
+      <!-- Splits Category Pills -->
+      <div class="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-3" id="split-pills-bar">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Daily Split Status Banner -->
+      <div class="bg-[#131926] border border-[#1f293d] rounded-2xl p-3.5 mb-3 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Fokus Hari Ini:</span>
+          <h2 id="current-split-title" class="text-base font-black text-white">Push Workout</h2>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="openExerciseGuideSearch()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl border border-slate-700 transition flex items-center gap-1">
+            <span>🔍 Cari Guide</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Exercise Cards List -->
+      <div id="exercise-list" class="space-y-3.5">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+
+      <!-- Action Buttons below Workout -->
+      <div class="grid grid-cols-2 gap-2 mt-4">
+        <button onclick="openManualAddModal()" class="py-3 px-3 bg-[#131926] hover:bg-slate-800/80 border border-[#1f293d] text-slate-200 font-bold text-xs rounded-2xl transition flex items-center justify-center gap-1.5 shadow-sm">
+          <span>✏️ Tambah Manual</span>
+        </button>
+        <button onclick="addExercisePromptQuick()" class="py-3 px-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 text-blue-400 font-bold text-xs rounded-2xl transition flex items-center justify-center gap-1.5">
+          <span>⚡ Tambah Cepat</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: COACH PANEL (SUPER ADMIN ONLY) ==================== -->
+    <section id="section-coach" class="hidden flex-1 space-y-4">
+      <div class="bg-[#131926] border border-purple-500/30 rounded-2xl p-4 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="p-2 bg-purple-500/20 text-purple-400 rounded-xl">👑</span>
+            <div>
+              <h3 class="text-sm font-bold text-white">Panel Penugasan Latihan Member</h3>
+              <p class="text-[11px] text-slate-400">Tentukan susunan latihan harian untuk murid/member gym</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">SUPER ADMIN</span>
+        </div>
+
+        <div class="space-y-3 mt-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Member Target:</label>
+            <select id="coach-target-user" onchange="loadCoachViewForMember()" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Hari / Split:</label>
+            <select id="coach-target-split" onchange="loadCoachViewForMember()" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+              <option value="Push">Push (Dada, Bahu, Triceps)</option>
+              <option value="Pull">Pull (Punggung, Biceps)</option>
+              <option value="Legs">Legs (Kaki & Betis)</option>
+              <option value="Upper Body">Upper Body</option>
+              <option value="Lower Body">Lower Body</option>
+            </select>
+          </div>
+
+          <div class="pt-2">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-300">Rencana Latihan Aktif:</span>
+              <button onclick="coachAssignExerciseModal()" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] rounded-lg transition">
+                + Tambah Tugas Gerakan
+              </button>
+            </div>
+            <div id="coach-member-exercises" class="space-y-2 min-h-[100px] max-h-[220px] overflow-y-auto scrollbar-none bg-[#090d16] p-2 rounded-xl border border-slate-800">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Share Program Code Card -->
+      <div class="bg-[#131926] border border-[#1f293d] rounded-2xl p-4">
+        <h4 class="text-xs font-bold text-white mb-1">Bagikan Program via Kode / WhatsApp</h4>
+        <p class="text-[11px] text-slate-400 mb-3">Salin kode konfigurasi latihan ini lalu kirimkan ke member.</p>
+        <button onclick="copyMemberProgramCode()" class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition">
+          📋 Salin Kode Program Member Terpilih
+        </button>
+
+        <div class="mt-4 pt-3 border-t border-slate-800">
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">Impor / Terapkan Kode Program Baru:</label>
+          <textarea id="import-code-area" rows="2" placeholder="Tempel kode program coach di sini..." class="w-full bg-[#090d16] border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-600"></textarea>
+          <button onclick="applyImportedCode()" class="w-full mt-2 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition">
+            Terapkan ke Akun Member Terpilih
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: DATABASE LATIHAN (SUPER ADMIN ONLY) ==================== -->
+    <section id="section-db" class="hidden flex-1 space-y-4">
+      <div class="bg-[#131926] border border-blue-500/30 rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="p-2 bg-blue-500/20 text-blue-400 rounded-xl">📚</span>
+            <div>
+              <h3 class="text-sm font-bold text-white">Database Katalog Gerakan</h3>
+              <p class="text-[11px] text-slate-400">Total <span id="db-total-count" class="font-bold text-blue-400">0</span> gerakan tersimpan secara global</p>
+            </div>
+          </div>
+          <button onclick="openAddExerciseToDBModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition">
+            + Tambah Baru
+          </button>
+        </div>
+
+        <input type="text" id="db-search-input" oninput="renderDBItems()" placeholder="Cari nama latihan / otot (misal: bench, squat, bicep)..." class="w-full mt-2 bg-[#090d16] border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+      </div>
+
+      <!-- File Importer / Exporter -->
+      <div class="bg-[#131926] border border-[#1f293d] rounded-2xl p-4">
+        <h4 class="text-xs font-bold text-white mb-1">Import & Export File Latihan</h4>
+        <p class="text-[11px] text-slate-400 mb-3">Punya file daftar latihan? Unggah file berformat JSON, CSV, atau TXT baris demi baris:</p>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="file" id="db-file-input" accept=".json,.csv,.txt" onchange="handleFileImport(event)" class="text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+          <button onclick="exportDBAsJSON()" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition">
+            Export JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Database Items Catalog List -->
+      <div id="db-catalog-container" class="space-y-2">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: CALCULATORS & TOOLS (ALL USERS) ==================== -->
+    <section id="section-tools" class="hidden flex-1 space-y-4">
+      <!-- 1RM Calculator -->
+      <div class="bg-[#131926] border border-[#1f293d] rounded-2xl p-4">
+        <h3 class="text-sm font-bold text-white mb-1">Estimasi 1-Rep Max (1RM)</h3>
+        <p class="text-[11px] text-slate-400 mb-3">Hitung beban angkatan maksimal 1 repetisi berdasarkan rumus Brzycki.</p>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Beban yang Diangkat (kg):</label>
+            <input type="number" id="calc-weight" placeholder="60" class="w-full bg-[#090d16] border border-slate-700 rounded-xl p-2.5 text-xs text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Repetisi yang Selesai:</label>
+            <input type="number" id="calc-reps" placeholder="8" class="w-full bg-[#090d16] border border-slate-700 rounded-xl p-2.5 text-xs text-white" />
+          </div>
+        </div>
+        <button onclick="compute1RM()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition">
+          Hitung Estimasi 1RM
+        </button>
+        <div id="calc-1rm-result" class="hidden mt-3 p-3 bg-[#090d16] rounded-xl border border-slate-800 text-xs"></div>
+      </div>
+
+      <!-- Plate Calculator -->
+      <div class="bg-[#131926] border border-[#1f293d] rounded-2xl p-4">
+        <h3 class="text-sm font-bold text-white mb-1">Barbell Plate Calculator (Olympic 20 kg)</h3>
+        <p class="text-[11px] text-slate-400 mb-3">Hitung susunan piringan per sisi barbel.</p>
+        <input type="number" id="plate-target" oninput="computeBarbellPlates()" placeholder="Masukkan total target beban (misal: 80 kg)" class="w-full bg-[#090d16] border border-slate-700 rounded-xl p-2.5 text-xs text-white mb-2" />
+        <div id="plate-output" class="p-3 bg-[#090d16] rounded-xl border border-slate-800 text-xs text-slate-300">
+          Masukkan total beban untuk kalkulasi per sisi.
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: WORKOUT HISTORY (ALL USERS) ==================== -->
+    <section id="section-history" class="hidden flex-1 space-y-3">
+      <div class="bg-[#131926] border border-[#1f293d] rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-white">Riwayat Sesi Latihan</h3>
+          <p class="text-[11px] text-slate-400">Profil: <span id="history-user-badge" class="font-bold text-blue-400">-</span></p>
+        </div>
+        <button onclick="clearUserHistory()" class="text-xs text-red-400 hover:underline">Hapus Semua</button>
+      </div>
+
+      <div id="history-list-box" class="space-y-2">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== FLOATING REST TIMER BAR ==================== -->
+  <div id="timer-bar" class="fixed bottom-0 left-0 right-0 z-50 bg-[#131926]/95 border-t-2 border-blue-500 backdrop-blur-md px-4 py-3 flex items-center justify-between shadow-2xl transition-all duration-300 transform translate-y-full">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center pulse-ring">
+        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </div>
+      <div>
+        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Waktu Istirahat</span>
+        <div id="timer-display" class="text-xl font-black text-white font-mono leading-none">01:30</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+      <button onclick="adjustTimer(-15)" class="px-2.5 py-1.5 bg-[#090d16] hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-lg text-xs font-bold transition">-15s</button>
+      <button onclick="adjustTimer(15)" class="px-2.5 py-1.5 bg-[#090d16] hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-lg text-xs font-bold transition">+15s</button>
+      <button onclick="stopTimer()" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition shadow-sm">Lewati</button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EXERCISE VISUAL GUIDE ==================== -->
+  <div id="modal-guide" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#131926] border border-[#1f293d] rounded-2xl w-full max-w-lg p-5 max-h-[85vh] overflow-y-auto scrollbar-none flex flex-col relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 id="modal-guide-title" class="text-base font-black text-white">Panduan Gerakan</h3>
+          <p id="modal-guide-muscle" class="text-xs text-blue-400">Target Otot</p>
+        </div>
+        <button onclick="closeModal('modal-guide')" class="p-1.5 text-slate-400 hover:text-white rounded-lg">✕</button>
+      </div>
+
+      <!-- Preview Visual Container -->
+      <div id="modal-guide-visual" class="my-4">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Quick YouTube Action Buttons -->
+      <div class="space-y-2 mt-2 pt-3 border-t border-slate-800">
+        <a id="modal-guide-yt-btn" href="#" target="_blank" class="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+          <span>Tonton Video Tutorial Lengkap di YouTube</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: MANUAL ADD EXERCISE ==================== -->
+  <div id="modal-manual-add" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#131926] border border-[#1f293d] rounded-2xl w-full max-w-md p-5 flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <h3 class="text-sm font-bold text-white">Tambah Gerakan Manual</h3>
+        <button onclick="closeModal('modal-manual-add')" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Nama Gerakan *</label>
+          <input type="text" id="manual-name" placeholder="Misal: Incline Dumbbell Press" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Target Otot</label>
+          <input type="text" id="manual-muscle" placeholder="Misal: Dada Atas, Triceps" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Link Gambar / GIF (Opsional)</label>
+          <input type="url" id="manual-img" placeholder="https://..." class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">ID / Link YouTube Video (Opsional)</label>
+          <input type="text" id="manual-yt" placeholder="rT7DgCr-3pg" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        </div>
+      </div>
+
+      <button onclick="submitManualExercise()" class="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition">
+        Simpan ke Jadwal Hari Ini
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ADD TO GLOBAL DATABASE ==================== -->
+  <div id="modal-db-add" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#131926] border border-[#1f293d] rounded-2xl w-full max-w-md p-5 flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <h3 class="text-sm font-bold text-white">Tambah ke Database Global</h3>
+        <button onclick="closeModal('modal-db-add')" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Nama Latihan *</label>
+          <input type="text" id="db-input-name" placeholder="Contoh: Barbell Deadlift" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Kategori Split *</label>
+          <select id="db-input-cat" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+            <option value="Push">Push</option>
+            <option value="Pull">Pull</option>
+            <option value="Legs">Legs</option>
+            <option value="Upper Body">Upper Body</option>
+            <option value="Lower Body">Lower Body</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Target Otot</label>
+          <input type="text" id="db-input-muscle" placeholder="Hamstrings, Back, Glutes" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">ID Video YouTube (Opsional)</label>
+          <input type="text" id="db-input-yt" placeholder="Misal: op9kVnSso6Q" class="w-full bg-[#090d16] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        </div>
+      </div>
+
+      <button onclick="saveExerciseToGlobalDB()" class="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition">
+        Simpan ke Database
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       GYM WORKOUT TRACKER PRO - CORE APPLICATION JAVASCRIPT
+       ========================================================================== */
+
+    // 1. DEFAULT DATA & AUTHENTICATION SEED
+    const DEFAULT_ACCOUNTS = [
+      { username: 'coach', password: 'coach123', role: 'admin', name: 'Coach Utama' },
+      { username: 'admin', password: 'admin123', role: 'admin', name: 'Super Admin' },
+      { username: 'kevin', password: 'user123', role: 'user', name: 'Kevin (Member)' },
+      { username: 'budi', password: 'user123', role: 'user', name: 'Budi (Member)' }
+    ];
+
+    const DEFAULT_GLOBAL_DB = [
+      { name: "Barbell Bench Press", category: "Push", muscle: "Dada Tengah & Triceps", youtubeId: "rT7DgCr-3pg" },
+      { name: "Incline Dumbbell Press", category: "Push", muscle: "Dada Atas & Bahu", youtubeId: "0G2_XX7nuAG" },
+      { name: "Overhead Shoulder Press", category: "Push", muscle: "Bahu Depan & Lateral", youtubeId: "2yjwXTZQDDI" },
+      { name: "Push-up", category: "Push", muscle: "Dada, Bahu, Core", youtubeId: "IODxDxX7oi4" },
+      { name: "Triceps Pushdown", category: "Push", muscle: "Triceps", youtubeId: "2-LAMcpzODU" },
+      { name: "Lat Pulldown", category: "Pull", muscle: "Punggung (Lats)", youtubeId: "CAwf7n6Luuc" },
+      { name: "Barbell Bent-Over Row", category: "Pull", muscle: "Punggung Tengah", youtubeId: "FWJR5Ve8gkQ" },
+      { name: "Bicep Barbell Curl", category: "Pull", muscle: "Biceps", youtubeId: "ykJmrZ5v0Oo" },
+      { name: "Face Pull", category: "Pull", muscle: "Rear Deltoid & Traps", youtubeId: "rep-qVOkqgk" },
+      { name: "Barbell Squat", category: "Legs", muscle: "Quadriceps & Glutes", youtubeId: "bEv6CCg2BC8" },
+      { name: "Romanian Deadlift", category: "Legs", muscle: "Hamstrings & Glutes", youtubeId: "jey_CzKn3mw" },
+      { name: "Leg Press", category: "Legs", muscle: "Kaki Keseluruhan", youtubeId: "IZxyjW7MPJQ" },
+      { name: "Standing Calf Raise", category: "Legs", muscle: "Betis", youtubeId: "gwLzBJYoWlI" }
+    ];
+
+    const DEFAULT_SPLITS = ["Push", "Pull", "Legs", "Upper Body", "Lower Body"];
+
+    // 2. STATE VARIABLES
+    let accounts = JSON.parse(localStorage.getItem('gt_accounts')) || DEFAULT_ACCOUNTS;
+    let currentUser = null;
+    let globalExerciseDB = JSON.parse(localStorage.getItem('gt_global_db')) || DEFAULT_GLOBAL_DB;
+    let currentSplit = "Push";
+    let activeNavTab = "workout";
+
+    // Rest Timer & Audio State
+    let timerInterval = null;
+    let secondsLeft = 90;
+    let audioCtx = null;
+
+    // Cache for Visual Guides
+    let visualCache = JSON.parse(localStorage.getItem('gt_visual_cache')) || {};
+
+    // --- WEB AUDIO API & ALARM FUNCTIONS ---
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // Play 3-tone audible beep and vibrate phone
+    function playTimerAlarm() {
+      try {
+        const ctx = getAudioContext();
+        const beeps = [0, 0.22, 0.45];
+
+        beeps.forEach((delay, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = "sine";
+          // High pitch on 3rd beep
+          osc.frequency.setValueAtTime(idx === 2 ? 880 : 660, ctx.currentTime + delay);
+
+          gain.gain.setValueAtTime(0.35, ctx.currentTime + delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(ctx.currentTime + delay);
+          osc.stop(ctx.currentTime + delay + 0.2);
+        });
+
+        // Mobile Vibration API (pattern: buzz, pause, buzz, pause, long buzz)
+        if ("vibrate" in navigator) {
+          navigator.vibrate([200, 100, 200, 100, 450]);
+        }
+      } catch (err) {
+        console.warn("Audio Context playback error:", err);
+      }
+    }
+
+    // Unlock Audio Context on first interaction
+    document.addEventListener("click", () => {
+      getAudioContext();
+    }, { once: true });
+
+    // --- AUTHENTICATION & RBAC LOGIC ---
+    function setAuthMode(mode) {
+      const isLogin = mode === 'login';
+      document.getElementById('tab-toggle-login').className = isLogin ? 'flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-blue-600 text-white shadow' : 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white';
+      document.getElementById('tab-toggle-reg').className = !isLogin ? 'flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-blue-600 text-white shadow' : 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white';
+      document.getElementById('auth-role-select-box').classList.toggle('hidden', isLogin);
+      document.getElementById('auth-submit-btn').innerText = isLogin ? 'Masuk ke Aplikasi' : 'Daftarkan Akun Baru';
+      document.getElementById('auth-alert').classList.add('hidden');
+    }
+
+    function quickLogin(role) {
+      if (role === 'admin') {
+        loginUser('coach', 'coach123');
+      } else {
+        loginUser('kevin', 'user123');
+      }
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById('auth-username').value.trim().toLowerCase();
+      const p = document.getElementById('auth-password').value.trim();
+      const isRegister = !document.getElementById('auth-role-select-box').classList.contains('hidden');
+
+      if (isRegister) {
+        const role = document.getElementById('auth-role').value;
+        if (accounts.some(a => a.username === u)) {
+          showAuthAlert("Username tersebut sudah terdaftar!");
+          return;
+        }
+        const newAcc = { username: u, password: p, role: role, name: u.charAt(0).toUpperCase() + u.slice(1) };
+        accounts.push(newAcc);
+        localStorage.setItem('gt_accounts', JSON.stringify(accounts));
+        loginUser(u, p);
+      } else {
+        loginUser(u, p);
+      }
+    }
+
+    function loginUser(username, password) {
+      const match = accounts.find(a => a.username === username.toLowerCase() && a.password === password);
+      if (!match) {
+        showAuthAlert("Username atau password salah!");
+        return;
+      }
+
+      currentUser = match;
+      localStorage.setItem('gt_logged_user', JSON.stringify(match));
+      document.getElementById('auth-screen').classList.add('hidden');
+      applyUserRoleAndBoot();
+    }
+
+    function showAuthAlert(msg) {
+      const el = document.getElementById('auth-alert');
+      el.innerText = msg;
+      el.classList.remove('hidden');
+    }
+
+    function logout() {
+      localStorage.removeItem('gt_logged_user');
+      currentUser = null;
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('auth-username').value = "";
+      document.getElementById('auth-password').value = "";
+      setAuthMode('login');
+      stopTimer();
+    }
+
+    function applyUserRoleAndBoot() {
+      const isAdmin = currentUser.role === 'admin';
+      
+      // Update header details
+      document.getElementById('header-username').innerText = currentUser.name || currentUser.username;
+      const roleBadge = document.getElementById('header-role-badge');
+      if (isAdmin) {
+        roleBadge.innerText = 'SUPER ADMIN';
+        roleBadge.className = 'text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40';
+      } else {
+        roleBadge.innerText = 'MEMBER';
+        roleBadge.className = 'text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30';
+      }
+
+      // Hide or show Super Admin Exclusive Tabs
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.classList.toggle('hidden', !isAdmin);
+      });
+
+      // Reset to workout tab
+      switchNavTab('workout');
+      renderSplitsBar();
+      renderCurrentWorkout();
+      loadCoachTargetDropdown();
+      renderDBItems();
+      loadHistory();
+    }
+
+    // --- WORKOUT ROUTINE STORAGE & RENDERING ---
+    function getUserRoutine(username) {
+      const key = `gt_routine_${username}`;
+      const saved = localStorage.getItem(key);
+      if (saved) return JSON.parse(saved);
+
+      // Default sample routine
+      return {
+        "Push": [
+          { name: "Barbell Bench Press", sets: [{ type: "N", prev: "50kg x 10", weight: 50, reps: 10, done: false }, { type: "N", prev: "50kg x 8", weight: 50, reps: 8, done: false }] },
+          { name: "Overhead Shoulder Press", sets: [{ type: "N", prev: "30kg x 10", weight: 30, reps: 10, done: false }] }
+        ],
+        "Pull": [
+          { name: "Lat Pulldown", sets: [{ type: "N", prev: "40kg x 12", weight: 40, reps: 12, done: false }] },
+          { name: "Bicep Barbell Curl", sets: [{ type: "N", prev: "20kg x 10", weight: 20, reps: 10, done: false }] }
+        ],
+        "Legs": [
+          { name: "Barbell Squat", sets: [{ type: "N", prev: "60kg x 8", weight: 60, reps: 8, done: false }] },
+          { name: "Romanian Deadlift", sets: [{ type: "N", prev: "50kg x 10", weight: 50, reps: 10, done: false }] }
+        ],
+        "Upper Body": [],
+        "Lower Body": []
+      };
+    }
+
+    function saveUserRoutine(username, data) {
+      localStorage.setItem(`gt_routine_${username}`, JSON.stringify(data));
+    }
+
+    function renderSplitsBar() {
+      const bar = document.getElementById('split-pills-bar');
+      bar.innerHTML = DEFAULT_SPLITS.map(split => `
+        <button onclick="setSplit('${split}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${split === currentSplit ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-[#131926] text-slate-400 hover:text-white border border-[#1f293d]'}">
+          ${split}
+        </button>
+      `).join("");
+
+      document.getElementById('current-split-title').innerText = `${currentSplit} Workout`;
+    }
+
+    function setSplit(split) {
+      currentSplit = split;
+      renderSplitsBar();
+      renderCurrentWorkout();
+    }
+
+    function renderCurrentWorkout() {
+      if (!currentUser) return;
+      const routine = getUserRoutine(currentUser.username);
+      const exercises = routine[currentSplit] || [];
+      const listEl = document.getElementById('exercise-list');
+      listEl.innerHTML = "";
+
+      if (exercises.length === 0) {
+        listEl.innerHTML = `
+          <div class="p-8 text-center bg-[#131926] border border-[#1f293d] rounded-2xl">
+            <span class="text-3xl block mb-2">📋</span>
+            <p class="text-sm font-bold text-white">Belum ada latihan di split ${currentSplit}</p>
+            <p class="text-xs text-slate-400 mt-1">Gunakan tombol Tambah Manual atau Tambah Cepat di bawah.</p>
+          </div>
+        `;
+        computeSessionTotals();
+        return;
+      }
+
+      exercises.forEach((ex, exIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-[#131926] border border-[#1f293d] rounded-2xl p-3.5 shadow-sm";
+
+        const setRows = ex.sets.map((s, sIdx) => `
+          <tr class="border-b border-slate-800/60 last:border-0">
+            <td class="py-1.5 text-center font-bold text-slate-400">${sIdx + 1}</td>
+            <td class="py-1.5 px-1">
+              <select onchange="updateSetData(${exIdx}, ${sIdx}, 'type', this.value)" class="w-full bg-[#090d16] border border-slate-700/80 rounded-lg py-1 px-0.5 text-center text-xs text-white">
+                <option value="N" ${s.type === 'N' ? 'selected' : ''}>Norm</option>
+                <option value="W" ${s.type === 'W' ? 'selected' : ''}>Warm</option>
+                <option value="D" ${s.type === 'D' ? 'selected' : ''}>Drop</option>
+                <option value="F" ${s.type === 'F' ? 'selected' : ''}>Fail</option>
+              </select>
+            </td>
+            <td class="py-1.5 text-center text-[11px] text-slate-400 font-medium">${s.prev || '-'}</td>
+            <td class="py-1.5 px-1">
+              <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${exIdx}, ${sIdx}, 'weight', this.value)" class="w-full bg-[#090d16] border border-slate-700/80 rounded-lg py-1 text-center text-xs text-white" />
+            </td>
+            <td class="py-1.5 px-1">
+              <input type="number" value="${s.reps}" onchange="updateSetData(${exIdx}, ${sIdx}, 'reps', this.value)" class="w-full bg-[#090d16] border border-slate-700/80 rounded-lg py-1 text-center text-xs text-white" />
+            </td>
+            <td class="py-1.5 text-center">
+              <button onclick="toggleSetCheck(${exIdx}, ${sIdx})" class="w-8 h-8 rounded-lg flex items-center justify-center font-bold transition mx-auto ${s.done ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'border border-slate-700 text-slate-500 hover:text-white'}">
+                ✓
+              </button>
+            </td>
+          </tr>
+        `).join("");
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white text-sm">${ex.name}</span>
+              <button onclick="openGuideModal('${ex.name}')" class="px-2 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-[10px] font-bold transition flex items-center gap-1">
+                👁 <span>Guide</span>
+              </button>
+            </div>
+            <button onclick="removeExerciseFromRoutine(${exIdx})" class="text-xs text-red-400 hover:underline p-1">Hapus</button>
+          </div>
+
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-[10px] text-slate-500 font-semibold border-b border-slate-800">
+                <th class="py-1 w-8">SET</th>
+                <th class="py-1 w-16">TIPE</th>
+                <th class="py-1 w-16">PREV</th>
+                <th class="py-1 w-16">KG</th>
+                <th class="py-1 w-16">REPS</th>
+                <th class="py-1 w-10">OK</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${setRows}
+            </tbody>
+          </table>
+
+          <button onclick="addSetToExercise(${exIdx})" class="w-full mt-2 py-1.5 bg-[#090d16] hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl text-[11px] font-semibold border border-slate-800 transition">
+            + Tambah Set
+          </button>
+        `;
+
+        listEl.appendChild(card);
+      });
+
+      computeSessionTotals();
+    }
+
+    function updateSetData(exIdx, sIdx, field, val) {
+      const routine = getUserRoutine(currentUser.username);
+      routine[currentSplit][exIdx].sets[sIdx][field] = field === 'type' ? val : Number(val);
+      saveUserRoutine(currentUser.username, routine);
+      computeSessionTotals();
+    }
+
+    function toggleSetCheck(exIdx, sIdx) {
+      getAudioContext(); // Unlock audio
+      const routine = getUserRoutine(currentUser.username);
+      const set = routine[currentSplit][exIdx].sets[sIdx];
+      set.done = !set.done;
+
+      if (set.done) {
+        startTimer(90); // 90 seconds auto rest timer
+      }
+
+      saveUserRoutine(currentUser.username, routine);
+      renderCurrentWorkout();
+    }
+
+    function addSetToExercise(exIdx) {
+      const routine = getUserRoutine(currentUser.username);
+      const sets = routine[currentSplit][exIdx].sets;
+      const last = sets[sets.length - 1] || { weight: 0, reps: 10 };
+      sets.push({
+        type: "N",
+        prev: `${last.weight}kg x ${last.reps}`,
+        weight: last.weight,
+        reps: last.reps,
+        done: false
+      });
+      saveUserRoutine(currentUser.username, routine);
+      renderCurrentWorkout();
+    }
+
+    function removeExerciseFromRoutine(exIdx) {
+      if (!confirm("Hapus latihan ini dari sesi?")) return;
+      const routine = getUserRoutine(currentUser.username);
+      routine[currentSplit].splice(exIdx, 1);
+      saveUserRoutine(currentUser.username, routine);
+      renderCurrentWorkout();
+    }
+
+    function computeSessionTotals() {
+      if (!currentUser) return;
+      const routine = getUserRoutine(currentUser.username);
+      const exercises = routine[currentSplit] || [];
+      let vol = 0;
+      let count = 0;
+
+      exercises.forEach(ex => {
+        ex.sets.forEach(s => {
+          if (s.done) {
+            count++;
+            vol += (s.weight * s.reps);
+          }
+        });
+      });
+
+      document.getElementById('session-summary').innerText = `Vol: ${vol.toLocaleString('id-ID')} kg • ${count} set selesai`;
+    }
+
+    function finishWorkout() {
+      if (!currentUser) return;
+      const routine = getUserRoutine(currentUser.username);
+      const exercises = routine[currentSplit] || [];
+      let vol = 0;
+      let count = 0;
+
+      exercises.forEach(ex => {
+        ex.sets.forEach(s => {
+          if (s.done) {
+            count++;
+            vol += (s.weight * s.reps);
+          }
+        });
+      });
+
+      if (count === 0) {
+        alert("Belum ada set yang dicentang hari ini!");
+        return;
+      }
+
+      const dateStr = new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const record = {
+        date: dateStr,
+        split: currentSplit,
+        sets: count,
+        volume: vol
+      };
+
+      const histKey = `gt_history_${currentUser.username}`;
+      const hist = JSON.parse(localStorage.getItem(histKey) || "[]");
+      hist.unshift(record);
+      localStorage.setItem(histKey, JSON.stringify(hist));
+
+      // Reset checked flags
+      exercises.forEach(ex => {
+        ex.sets.forEach(s => {
+          s.prev = `${s.weight}kg x ${s.reps}`;
+          s.done = false;
+        });
+      });
+
+      saveUserRoutine(currentUser.username, routine);
+      renderCurrentWorkout();
+      loadHistory();
+      stopTimer();
+      alert(`🎉 Sesi latihan [${currentSplit}] berhasil diselesaikan dan disimpan ke riwayat!`);
+    }
+
+    // --- TIMER SYSTEM HANDLERS ---
+    function startTimer(duration) {
+      clearInterval(timerInterval);
+      getAudioContext();
+      secondsLeft = duration;
+
+      const bar = document.getElementById('timer-bar');
+      bar.classList.remove('translate-y-full');
+
+      const updateUI = () => {
+        const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+        const s = (secondsLeft % 60).toString().padStart(2, '0');
+        document.getElementById('timer-display').innerText = `${m}:${s}`;
+      };
+
+      updateUI();
+
+      timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateUI();
+
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          bar.classList.add('translate-y-full');
+          playTimerAlarm(); // Trigger 3-beep tone and mobile vibration
+        }
+      }, 1000);
+    }
+
+    function adjustTimer(sec) {
+      secondsLeft = Math.max(5, secondsLeft + sec);
+      const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+      const s = (secondsLeft % 60).toString().padStart(2, '0');
+      document.getElementById('timer-display').innerText = `${m}:${s}`;
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      document.getElementById('timer-bar').classList.add('translate-y-full');
+    }
+
+    // --- NAVIGATION TAB SWITCHER ---
+    function switchNavTab(tab) {
+      activeNavTab = tab;
+      const tabs = ['workout', 'coach', 'db', 'tools', 'history'];
+
+      tabs.forEach(t => {
+        const btn = document.getElementById(`nav-btn-${t}`);
+        const sec = document.getElementById(`section-${t}`);
+        if (!btn || !sec) return;
+
+        const isActive = t === tab;
+        sec.classList.toggle('hidden', !isActive);
+
+        if (isActive) {
+          btn.className = (t === 'coach')
+            ? 'flex-1 py-2 px-3 rounded-xl font-bold text-xs transition bg-purple-600 text-white shadow-sm flex items-center justify-center gap-1 whitespace-nowrap'
+            : 'flex-1 py-2 px-3 rounded-xl font-bold text-xs transition bg-blue-600 text-white shadow-sm flex items-center justify-center gap-1 whitespace-nowrap';
+        } else {
+          btn.className = 'flex-1 py-2 px-3 rounded-xl font-bold text-xs transition text-slate-400 hover:text-white flex items-center justify-center gap-1 whitespace-nowrap';
+        }
+      });
+
+      if (tab === 'coach') loadCoachViewForMember();
+      if (tab === 'history') loadHistory();
+    }
+
+    // --- SUPER ADMIN: COACH PANEL LOGIC ---
+    function loadCoachTargetDropdown() {
+      const select = document.getElementById('coach-target-user');
+      // Filter out admin themselves or list all users
+      const memberList = accounts.filter(a => a.role === 'user');
+      select.innerHTML = memberList.map(m => `<option value="${m.username}">${m.name || m.username}</option>`).join("");
+      loadCoachViewForMember();
+    }
+
+    function loadCoachViewForMember() {
+      const targetUser = document.getElementById('coach-target-user').value;
+      const targetSplit = document.getElementById('coach-target-split').value;
+      if (!targetUser) return;
+
+      const routine = getUserRoutine(targetUser);
+      const exercises = routine[targetSplit] || [];
+      const container = document.getElementById('coach-member-exercises');
+
+      if (exercises.length === 0) {
+        container.innerHTML = `<div class="text-[11px] text-slate-500 py-3 text-center">Belum ada tugas latihan di split ${targetSplit} untuk member ini.</div>`;
+        return;
+      }
+
+      container.innerHTML = exercises.map((ex, idx) => `
+        <div class="flex items-center justify-between p-2 bg-[#131926] rounded-lg border border-slate-800">
+          <div>
+            <div class="text-xs font-bold text-white">${ex.name}</div>
+            <div class="text-[10px] text-slate-400">${ex.sets.length} Set ditugaskan</div>
+          </div>
+          <button onclick="coachRemoveExercise(${idx})" class="text-xs text-red-400 hover:underline p-1">Hapus</button>
+        </div>
+      `).join("");
+    }
+
+    function coachAssignExerciseModal() {
+      const targetUser = document.getElementById('coach-target-user').value;
+      const targetSplit = document.getElementById('coach-target-split').value;
+      const name = prompt(`Nama gerakan latihan untuk ${targetUser}:`);
+      if (!name || !name.trim()) return;
+
+      const sets = parseInt(prompt("Jumlah set (misal: 3 atau 4):") || "3", 10);
+      const reps = parseInt(prompt("Target repetisi per set (misal: 10 atau 12):") || "10", 10);
+
+      const routine = getUserRoutine(targetUser);
+      if (!routine[targetSplit]) routine[targetSplit] = [];
+
+      const newSets = [];
+      for (let i = 0; i < sets; i++) {
+        newSets.push({ type: "N", prev: "-", weight: 0, reps: reps, done: false });
+      }
+
+      routine[targetSplit].push({ name: name.trim(), sets: newSets });
+      saveUserRoutine(targetUser, routine);
+      loadCoachViewForMember();
+      alert(`✅ Berhasil menambahkan ${name} ke jadwal ${targetUser}!`);
+    }
+
+    function coachRemoveExercise(idx) {
+      const targetUser = document.getElementById('coach-target-user').value;
+      const targetSplit = document.getElementById('coach-target-split').value;
+      const routine = getUserRoutine(targetUser);
+
+      if (routine[targetSplit]) {
+        routine[targetSplit].splice(idx, 1);
+        saveUserRoutine(targetUser, routine);
+        loadCoachViewForMember();
+      }
+    }
+
+    function copyMemberProgramCode() {
+      const targetUser = document.getElementById('coach-target-user').value;
+      const routine = getUserRoutine(targetUser);
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(routine))));
+      
+      // Copy to clipboard
+      const tempInput = document.createElement("input");
+      document.body.appendChild(tempInput);
+      tempInput.value = encoded;
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+
+      alert(`📋 Kode Program ${targetUser} berhasil disalin ke clipboard! Kirimkan ke member.`);
+    }
+
+    function applyImportedCode() {
+      const targetUser = document.getElementById('coach-target-user').value;
+      const code = document.getElementById('import-code-area').value.trim();
+      if (!code) {
+        alert("Silakan tempel kode program terlebih dahulu!");
+        return;
+      }
+
+      try {
+        const decoded = decodeURIComponent(escape(atob(code)));
+        const parsed = JSON.parse(decoded);
+        saveUserRoutine(targetUser, parsed);
+        loadCoachViewForMember();
+        document.getElementById('import-code-area').value = "";
+        alert(`✅ Program berhasil diperbarui untuk ${targetUser}!`);
+      } catch (err) {
+        alert("Kode program tidak valid.");
+      }
+    }
+
+    // --- SUPER ADMIN: GLOBAL DATABASE LATIHAN LOGIC ---
+    function renderDBItems() {
+      const q = (document.getElementById('db-search-input')?.value || "").toLowerCase();
+      const container = document.getElementById('db-catalog-container');
+      const filtered = globalExerciseDB.filter(e => e.name.toLowerCase().includes(q) || (e.muscle && e.muscle.toLowerCase().includes(q)));
+
+      document.getElementById('db-total-count').innerText = globalExerciseDB.length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-slate-500">Tidak ada gerakan yang cocok.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map((e, idx) => `
+        <div class="bg-[#131926] border border-[#1f293d] rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <div class="font-bold text-white text-xs">${e.name}</div>
+            <div class="text-[10px] text-slate-400">${e.muscle || '-'} • Kategori: <span class="text-blue-400 font-semibold">${e.category || '-'}</span></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openGuideModal('${e.name}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg text-[10px] font-bold border border-slate-700">Preview</button>
+            <button onclick="deleteFromGlobalDB(${idx})" class="text-red-400 hover:text-red-300 text-xs p-1">✕</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function openAddExerciseToDBModal() {
+      document.getElementById('modal-db-add').classList.remove('hidden');
+      document.getElementById('modal-db-add').classList.add('flex');
+    }
+
+    function saveExerciseToGlobalDB() {
+      const name = document.getElementById('db-input-name').value.trim();
+      const cat = document.getElementById('db-input-cat').value;
+      const muscle = document.getElementById('db-input-muscle').value.trim();
+      const yt = document.getElementById('db-input-yt').value.trim();
+
+      if (!name) {
+        alert("Nama gerakan wajib diisi!");
+        return;
+      }
+
+      globalExerciseDB.unshift({
+        name: name,
+        category: cat,
+        muscle: muscle || "Umum",
+        youtubeId: yt || ""
+      });
+
+      localStorage.setItem('gt_global_db', JSON.stringify(globalExerciseDB));
+      closeModal('modal-db-add');
+      renderDBItems();
+      alert(`✅ ${name} berhasil ditambahkan ke Database Global!`);
+    }
+
+    function deleteFromGlobalDB(idx) {
+      if (!confirm("Hapus latihan ini dari Database Global?")) return;
+      globalExerciseDB.splice(idx, 1);
+      localStorage.setItem('gt_global_db', JSON.stringify(globalExerciseDB));
+      renderDBItems();
+    }
+
+    function handleFileImport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const content = evt.target.result;
+          let added = 0;
+
+          if (file.name.endsWith('.json')) {
+            const parsed = JSON.parse(content);
+            if (Array.isArray(parsed)) {
+              parsed.forEach(item => {
+                if (item.name) {
+                  globalExerciseDB.push({
+                    name: item.name,
+                    category: item.category || "Push",
+                    muscle: item.muscle || item.target || "Umum",
+                    youtubeId: item.youtubeId || ""
+                  });
+                  added++;
+                }
+              });
+            }
+          } else {
+            // Line by line plain text / csv
+            const lines = content.split(/\r?\n/);
+            lines.forEach(line => {
+              if (line.trim().length > 0) {
+                const parts = line.split(',');
+                globalExerciseDB.push({
+                  name: parts[0].trim(),
+                  category: parts[1] ? parts[1].trim() : "Push",
+                  muscle: parts[2] ? parts[2].trim() : "Umum",
+                  youtubeId: ""
+                });
+                added++;
+              }
+            });
+          }
+
+          localStorage.setItem('gt_global_db', JSON.stringify(globalExerciseDB));
+          renderDBItems();
+          alert(`✅ Sukses mengimpor ${added} gerakan ke Database Global!`);
+        } catch (err) {
+          alert("Gagal membaca file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function exportDBAsJSON() {
+      const blob = new Blob([JSON.stringify(globalExerciseDB, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "gym_exercise_database.json";
+      a.click();
+    }
+
+    // --- MODAL CONTROLS & VISUAL GUIDES ---
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+
+    function openManualAddModal() {
+      document.getElementById('manual-name').value = "";
+      document.getElementById('manual-muscle').value = "";
+      document.getElementById('manual-img').value = "";
+      document.getElementById('manual-yt').value = "";
+      const modal = document.getElementById('modal-manual-add');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function submitManualExercise() {
+      const name = document.getElementById('manual-name').value.trim();
+      const muscle = document.getElementById('manual-muscle').value.trim();
+      const img = document.getElementById('manual-img').value.trim();
+      const yt = document.getElementById('manual-yt').value.trim();
+
+      if (!name) {
+        alert("Nama gerakan wajib diisi!");
+        return;
+      }
+
+      const routine = getUserRoutine(currentUser.username);
+      if (!routine[currentSplit]) routine[currentSplit] = [];
+
+      routine[currentSplit].push({
+        name: name,
+        sets: [{ type: "N", prev: "-", weight: 0, reps: 10, done: false }]
+      });
+
+      if (img || yt || muscle) {
+        visualCache[name.toLowerCase()] = {
+          image: img,
+          youtubeId: yt,
+          info: `Target: ${muscle || currentSplit}`
+        };
+        localStorage.setItem('gt_visual_cache', JSON.stringify(visualCache));
+      }
+
+      saveUserRoutine(currentUser.username, routine);
+      closeModal('modal-manual-add');
+      renderCurrentWorkout();
+    }
+
+    function addExercisePromptQuick() {
+      const name = prompt("Ketik nama gerakan latihan:");
+      if (!name || !name.trim()) return;
+
+      const routine = getUserRoutine(currentUser.username);
+      if (!routine[currentSplit]) routine[currentSplit] = [];
+
+      routine[currentSplit].push({
+        name: name.trim(),
+        sets: [{ type: "N", prev: "-", weight: 0, reps: 10, done: false }]
+      });
+
+      saveUserRoutine(currentUser.username, routine);
+      renderCurrentWorkout();
+    }
+
+    function openExerciseGuideSearch() {
+      const name = prompt("Masukkan nama gerakan yang ingin dicari panduannya:");
+      if (name) openGuideModal(name.trim());
+    }
+
+    async function openGuideModal(exerciseName) {
+      const modal = document.getElementById('modal-guide');
+      const title = document.getElementById('modal-guide-title');
+      const muscle = document.getElementById('modal-guide-muscle');
+      const visualBox = document.getElementById('modal-guide-visual');
+      const ytBtn = document.getElementById('modal-guide-yt-btn');
+
+      title.innerText = exerciseName;
+      muscle.innerText = "Mendeteksi target otot & teknik gerakan...";
+      visualBox.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Mencari visual gerakan...</div>`;
+
+      // Set YouTube query
+      const query = encodeURIComponent(`${exerciseName} workout form tutorial`);
+      ytBtn.href = `https://www.youtube.com/results?search_query=${query}`;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // 1. Cek DB Global / Cache
+      const matchDB = globalExerciseDB.find(e => e.name.toLowerCase() === exerciseName.toLowerCase());
+      const cached = visualCache[exerciseName.toLowerCase()];
+
+      if (matchDB && matchDB.youtubeId) {
+        muscle.innerText = `Target: ${matchDB.muscle || '-'}`;
+        visualBox.innerHTML = `
+          <div class="relative w-full pb-[56.25%] h-0 rounded-xl overflow-hidden bg-black border border-slate-800">
+            <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube-nocookie.com/embed/${matchDB.youtubeId}" allowfullscreen></iframe>
+          </div>
+        `;
+        return;
+      }
+
+      if (cached && cached.image) {
+        muscle.innerText = cached.info || "Visual guide siap";
+        visualBox.innerHTML = `<img src="${cached.image}" class="w-full max-h-64 object-contain rounded-xl border border-slate-800 bg-black" alt="${exerciseName}" />`;
+        return;
+      }
+
+      // 2. Fetch dari Open Exercise Database
+      try {
+        const searchWord = exerciseName.toLowerCase().replace(/[^a-z0-9]/g, ' ');
+        const res = await fetch(`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json`);
+        if (res.ok) {
+          const list = await res.json();
+          const matched = list.find(item => item.name.toLowerCase().includes(searchWord) || searchWord.includes(item.name.toLowerCase()));
+          if (matched && matched.images && matched.images.length > 0) {
+            const imgUrl = `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${matched.images[0]}`;
+            visualBox.innerHTML = `<img src="${imgUrl}" class="w-full max-h-64 object-contain rounded-xl border border-slate-800 bg-black" alt="${exerciseName}" />`;
+            muscle.innerText = `Target: ${matched.primaryMuscles?.join(', ') || '-'}`;
+            visualCache[exerciseName.toLowerCase()] = { image: imgUrl, info: muscle.innerText };
+            localStorage.setItem('gt_visual_cache', JSON.stringify(visualCache));
+            return;
+          }
+        }
+      } catch (err) {}
+
+      // Fallback
+      visualBox.innerHTML = `
+        <div class="p-6 text-center bg-[#090d16] border border-slate-800 rounded-xl">
+          <p class="text-xs text-slate-300 font-semibold mb-1">Panduan Siap Diputar di YouTube</p>
+          <p class="text-[11px] text-slate-500">Klik tombol merah di bawah untuk menonton video tutorial form gerakan ini secara langsung.</p>
+        </div>
+      `;
+      muscle.innerText = "Panduan Visual YouTube";
+    }
+
+    // --- CALCULATORS & TOOLS ---
+    function compute1RM() {
+      const w = parseFloat(document.getElementById('calc-weight').value);
+      const r = parseFloat(document.getElementById('calc-reps').value);
+      const resEl = document.getElementById('calc-1rm-result');
+
+      if (!w || !r || w <= 0 || r <= 0) {
+        alert("Masukkan beban dan repetisi yang valid!");
+        return;
+      }
+
+      const oneRM = (w * (36 / (37 - r))).toFixed(1);
+      resEl.classList.remove('hidden');
+      resEl.innerHTML = `
+        <div class="font-bold text-white text-sm mb-1">Estimasi 1RM: <span class="text-blue-400">${oneRM} kg</span></div>
+        <div class="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-800 text-[10px]">
+          <div><span class="text-slate-400 block">Kekuatan (90%):</span> <strong class="text-white">${(oneRM * 0.9).toFixed(1)} kg</strong></div>
+          <div><span class="text-slate-400 block">Otot (80%):</span> <strong class="text-white">${(oneRM * 0.8).toFixed(1)} kg</strong></div>
+          <div><span class="text-slate-400 block">Endurance (70%):</span> <strong class="text-white">${(oneRM * 0.7).toFixed(1)} kg</strong></div>
+        </div>
+      `;
+    }
+
+    function computeBarbellPlates() {
+      const target = parseFloat(document.getElementById('plate-target').value);
+      const out = document.getElementById('plate-output');
+
+      if (!target || target <= 20) {
+        out.innerText = "Masukkan beban di atas 20 kg (berat standar stang Olympic Bar).";
+        return;
+      }
+
+      let perSide = (target - 20) / 2;
+      const plates = [25, 20, 15, 10, 5, 2.5, 1.25];
+      let dist = [];
+
+      plates.forEach(p => {
+        const count = Math.floor(perSide / p);
+        if (count > 0) {
+          dist.push(`${count}x ${p}kg`);
+          perSide -= count * p;
+        }
+      });
+
+      out.innerHTML = `<strong>Susunan Tiap Sisi:</strong> ${dist.join(", ") || "Tanpa piringan tambahan"}`;
+    }
+
+    // --- HISTORY VIEWER ---
+    function loadHistory() {
+      if (!currentUser) return;
+      document.getElementById('history-user-badge').innerText = currentUser.name || currentUser.username;
+      const histKey = `gt_history_${currentUser.username}`;
+      const hist = JSON.parse(localStorage.getItem(histKey) || "[]");
+      const listEl = document.getElementById('history-list-box');
+
+      if (hist.length === 0) {
+        listEl.innerHTML = `<div class="p-8 text-center bg-[#131926] border border-[#1f293d] rounded-2xl text-xs text-slate-500">Belum ada sesi latihan tersimpan.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = hist.map(h => `
+        <div class="p-3 bg-[#131926] border border-[#1f293d] rounded-xl flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-white">[${h.split}] Workout</div>
+            <div class="text-[10px] text-slate-400">${h.date}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-black text-blue-400">${h.volume.toLocaleString('id-ID')} kg</div>
+            <div class="text-[10px] text-slate-400">${h.sets} Set Selesai</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function clearUserHistory() {
+      if (!currentUser) return;
+      if (!confirm("Hapus semua riwayat sesi latihan akun ini?")) return;
+      localStorage.removeItem(`gt_history_${currentUser.username}`);
+      loadHistory();
+    }
+
+    // --- BOOTSTRAP INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('gt_logged_user');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('auth-screen').classList.add('hidden');
+        applyUserRoleAndBoot();
+      }
+    });
+  </script>
+</body>
+</html>
